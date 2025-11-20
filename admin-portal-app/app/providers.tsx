@@ -9,18 +9,21 @@ const makeQueryClient = () =>
   new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 5, // Simple 5-second stale time for the mock data
+        // With SSR, we usually want to set some default staleTime
+        // above 0 to avoid refetching immediately on the client
+        staleTime: 60 * 1000, // 1 minute
       },
     },
   });
 
-// DEFAULT export the Providers component
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // We use useState to prevent the client from being created on every render
-  const [queryClient] = useState(makeQueryClient);
+  // NOTE: Avoid useState when initializing the query client if you don't
+  // have a suspense boundary between this component and the logic that
+  // creates the query client. However, for standard app directory setups,
+  // this lazy initialization pattern is the recommended standard.
+  const [queryClient] = useState(() => makeQueryClient());
 
   return (
-    // This is the essential wrapper for all components using useQuery
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }

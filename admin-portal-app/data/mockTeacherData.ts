@@ -1,49 +1,37 @@
 // data/mockTeacherData.ts
-import { TeacherStudentView } from "@/types/data"; // <-- Uses the correct @/ alias
+import { TeacherData } from "@/types/data";
 
-const getDayStatus = (daysAgo: number): "Present" | "Absent" => {
-  return daysAgo % 3 === 0 ? "Absent" : "Present";
-};
-
-const generateHistory = (roll: string) => {
-  const history = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    history.push({
-      date: date.toISOString().split("T")[0],
-      status: getDayStatus(i),
-    });
-  }
-  return history;
-};
-
-export const mockTeacherStudentView: TeacherStudentView[] = [
+export const mockTeacherData: TeacherData[] = [
   {
     serialNumber: 1,
-    studentName: "Alice Johnson",
-    studentRollNumber: "CS1001",
-    attendanceHistory: generateHistory("CS1001"),
-    currentSemester: "3rd",
-    batchNumber: "B2023-CS",
-    email: "alice.j@uni.edu",
+    teacherName: "Dr. Sarah Smith",
+    employeeId: "FAC-CS-001",
+    dateOfJoining: "2015-08-15", // ~8+ years
+    email: "sarah.smith@uni.edu",
+    department: "Computer Science",
   },
   {
     serialNumber: 2,
-    studentName: "Bob Williams",
-    studentRollNumber: "EC1002",
-    attendanceHistory: generateHistory("EC1002"),
-    currentSemester: "1st",
-    batchNumber: "B2024-EC",
-    email: "bob.w@uni.edu",
+    teacherName: "Prof. Robert Langdon",
+    employeeId: "FAC-HS-042",
+    dateOfJoining: "2010-01-20", // ~13+ years
+    email: "robert.l@uni.edu",
+    department: "History & Symbols",
   },
   {
     serialNumber: 3,
-    studentName: "Charlie Davis",
-    studentRollNumber: "CS1003",
-    attendanceHistory: generateHistory("CS1003"),
-    currentSemester: "3rd",
-    batchNumber: "B2023-CS",
-    email: "charlie.d@uni.edu",
+    teacherName: "Dr. Emily Blunt",
+    employeeId: "FAC-PH-108",
+    dateOfJoining: "2022-11-01", // ~1-2 years
+    email: "emily.b@uni.edu",
+    department: "Physics",
+  },
+  {
+    serialNumber: 4,
+    teacherName: "Mr. John Doe",
+    employeeId: "FAC-MA-202",
+    dateOfJoining: "2024-01-10", // <1 year
+    email: "john.doe@uni.edu",
+    department: "Mathematics",
   },
 ];

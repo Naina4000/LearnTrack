@@ -1,31 +1,37 @@
 // services/dataService.ts
-import { studentApi, teacherApi } from "./apiService";
-import { StudentPortalData, TeacherStudentView } from "../types/data";
+// NOTE: We are MOCKING the API calls for local development.
 
-// --- TEACHER PORTAL DATA ---
-// Fetches the list of students as seen by the Teacher portal
+// import axios from 'axios'; // <-- Comment out axios to prevent network calls
+import { StudentPortalData, TeacherStudentView } from "@/types/data";
+import { mockStudentData } from "@/data/mockStudentData";
+import { mockTeacherStudentView } from "@/data/mockTeacherData";
+
+// --- Data Fetching Functions (MOCKED) ---
+
+/**
+ * Fetches the list of students with detailed subject attendance from the Student Portal API.
+ */
+export const fetchAllStudentData = async (): Promise<StudentPortalData[]> => {
+  // Simulate network delay for better testing experience
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log("MOCK: Returning Student Portal Data.");
+      resolve(mockStudentData);
+    }, 500); // 0.5 second delay
+  });
+};
+
+/**
+ * Fetches the list of students with daily presence/absence records from the Teacher Portal API.
+ */
 export const fetchTeacherStudentView = async (): Promise<
   TeacherStudentView[]
 > => {
-  try {
-    // Assume the Teacher API has an endpoint to list all relevant students
-    const response = await teacherApi.get("/students-view");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching Teacher View Data:", error);
-    throw new Error("Could not load teacher view data.");
-  }
-};
-
-// --- STUDENT PORTAL DATA ---
-// Fetches the list of all students from the Student portal
-export const fetchAllStudentData = async (): Promise<StudentPortalData[]> => {
-  try {
-    // Assume the Student API has an endpoint to list all student details
-    const response = await studentApi.get("/all-students");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching Student Portal Data:", error);
-    throw new Error("Could not load student portal data.");
-  }
+  // Simulate network delay for better testing experience
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log("MOCK: Returning Teacher View Data.");
+      resolve(mockTeacherStudentView);
+    }, 800); // 0.8 second delay
+  });
 };

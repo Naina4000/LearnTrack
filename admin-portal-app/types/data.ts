@@ -1,6 +1,6 @@
 // types/data.ts
 
-// Data from the Student Portal API
+// Data from the Student Portal API (Unchanged)
 export interface StudentPortalData {
   name: string;
   batchNo: string;
@@ -8,13 +8,12 @@ export interface StudentPortalData {
   currentSemester: string;
 }
 
-// Data from the Teacher Portal API (This API returns detailed student info + attendance)
-export interface TeacherStudentView {
+// UPDATED: Data structure for the Teacher Portal (Teacher Profiles)
+export interface TeacherData {
   serialNumber: number;
-  studentName: string;
-  studentRollNumber: string;
-  attendanceHistory: { date: string; status: "Present" | "Absent" }[]; // Detailed attendance
-  currentSemester: string;
-  batchNumber: string;
+  teacherName: string;
+  employeeId: string; // Teacher ID
+  dateOfJoining: string; // ISO Format YYYY-MM-DD
   email: string;
+  department: string; // Added for context
 }
