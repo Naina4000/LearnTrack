@@ -1,31 +1,46 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchTeacherStudentView } from "@/services/dataService";
-import { TeacherStudentView } from "@/types/data";
-import { Loader2, BookOpen, Mail } from "lucide-react";
+// FIX 1: Import the correct new function name
+import { fetchTeacherData } from "@/services/dataService";
+// FIX 2: Import the correct new type name
+import { TeacherData } from "@/types/data";
+import { Loader2, BookOpen, User, Calendar, BadgeCheck } from "lucide-react";
 import React from "react";
 
 const LoadingState = () => (
   <div className="flex justify-center items-center h-64 text-indigo-500">
     <Loader2 className="w-8 h-8 animate-spin mr-3" />
-    <span className="text-lg font-semibold">Fetching Teacher View Data...</span>
+    <span className="text-lg font-semibold">Loading Teacher Profiles...</span>
   </div>
 );
 
 export default function TeacherViewClient() {
-  const { data, isLoading, error } = useQuery<TeacherStudentView[]>({
-    queryKey: ["teacherStudents"],
-    queryFn: fetchTeacherStudentView,
+  // FIX 3: Use the new type and function in useQuery
+  const { data, isLoading, error } = useQuery<TeacherData[]>({
+    queryKey: ["teacherProfiles"],
+    queryFn: fetchTeacherData,
   });
 
-  const getTodayStatus = (
-    history: { date: string; status: "Present" | "Absent" }[]
-  ) => {
-    // Assumes the first record in the history array is the most recent
-    if (!history || history.length === 0) return "N/A";
-    const todayRecord = history[0];
-    return todayRecord ? todayRecord.status : "N/A";
+  // Logic to calculate years of service
+  const calculateExperience = (dateString: string) => {
+    const joiningDate = new Date(dateString);
+    const today = new Date();
+
+    let years = today.getFullYear() - joiningDate.getFullYear();
+    let months = today.getMonth() - joiningDate.getMonth();
+
+    if (
+      months < 0 ||
+      (months === 0 && today.getDate() < joiningDate.getDate())
+    ) {
+      years--;
+      months += 12;
+    }
+
+    if (years === 0 && months === 0) return "Joined this month";
+    if (years === 0) return `${months} months`;
+    return `${years} Years ${months > 0 ? `& ${months} Months` : ""}`;
   };
 
   if (isLoading) return <LoadingState />;
@@ -43,91 +58,75 @@ export default function TeacherViewClient() {
 
   return (
     <div className="p-4 bg-white rounded-xl shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-indigo-700 flex items-center">
-        <BookOpen className="w-6 h-6 mr-2" /> Teacher Portal Student View
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-indigo-700 flex items-center">
+          <BookOpen className="w-8 h-8 mr-3" /> Teacher Staff Directory
+        </h1>
+        <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full font-semibold text-sm">
+          Total Staff: {data?.length || 0}
+        </div>
+      </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-indigo-50">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                S.No.
+              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Serial No.
               </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Roll No.
+              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Teacher Name
               </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Student Name
+              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Employee ID
               </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Batch/Sem
+              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Date of Joining
               </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Today's Status
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Prev. Attendance
+              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Experience (Tenure)
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data?.map((student) => (
+            {data?.map((teacher) => (
               <tr
-                key={student.studentRollNumber}
-                className="hover:bg-indigo-50 transition-colors"
+                key={teacher.employeeId}
+                className="hover:bg-indigo-50/60 transition-colors duration-150"
               >
-                <td className="py-4 px-4 whitespace-nowrap text-gray-600">
-                  {student.serialNumber}
+                <td className="py-4 px-6 whitespace-nowrap text-gray-500 font-medium">
+                  #{teacher.serialNumber}
                 </td>
-                <td className="py-4 px-4 whitespace-nowrap text-gray-600">
-                  {student.studentRollNumber}
+                <td className="py-4 px-6 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+                      <User size={16} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">
+                        {teacher.teacherName}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {teacher.email}
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td className="py-4 px-4 whitespace-nowrap font-medium text-gray-900">
-                  {student.studentName}
-                </td>
-                <td className="py-4 px-4 whitespace-nowrap text-gray-600">
-                  {student.batchNumber} / {student.currentSemester}
-                </td>
-                <td className="py-4 px-4 whitespace-nowrap">
-                  <a
-                    href={`mailto:${student.email}`}
-                    className="text-blue-500 hover:text-blue-700 flex items-center text-sm"
-                  >
-                    <Mail className="w-4 h-4 mr-1" /> Send Email
-                  </a>
-                </td>
-                <td className="py-4 px-4 whitespace-nowrap font-bold">
-                  <span
-                    className={
-                      getTodayStatus(student.attendanceHistory) === "Present"
-                        ? "text-green-600 bg-green-100 p-1 rounded"
-                        : "text-red-600 bg-red-100 p-1 rounded"
-                    }
-                  >
-                    {getTodayStatus(student.attendanceHistory)}
+                <td className="py-4 px-6 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 font-mono">
+                    {teacher.employeeId}
                   </span>
                 </td>
-                <td className="py-4 px-4 whitespace-nowrap">
-                  <div className="flex space-x-1 overflow-x-auto max-w-[150px]">
-                    {student.attendanceHistory.slice(0, 5).map((record, i) => (
-                      <span
-                        key={i}
-                        title={`${record.date}: ${record.status}`}
-                        className={`p-1 rounded-full text-xs font-bold w-6 h-6 flex items-center justify-center 
-                                ${
-                                  record.status === "Present"
-                                    ? "bg-green-500 text-white"
-                                    : "bg-red-500 text-white"
-                                }
-                            `}
-                      >
-                        {record.status === "Present" ? "P" : "A"}
-                      </span>
-                    ))}
+                <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                    {teacher.dateOfJoining}
+                  </div>
+                </td>
+                <td className="py-4 px-6 whitespace-nowrap">
+                  <div className="flex items-center text-sm font-semibold text-indigo-600">
+                    <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
+                    {calculateExperience(teacher.dateOfJoining)}
                   </div>
                 </td>
               </tr>

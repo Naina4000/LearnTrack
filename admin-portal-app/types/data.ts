@@ -1,19 +1,28 @@
 // types/data.ts
 
-// Data from the Student Portal API (Unchanged)
-export interface StudentPortalData {
+export interface StudentSubject {
   name: string;
-  batchNo: string;
-  subjects: { name: string; attendancePercentage: number }[];
-  currentSemester: string;
+  attendancePercentage: number;
 }
 
-// UPDATED: Data structure for the Teacher Portal (Teacher Profiles)
+// UPDATED: Student Data Structure
+export interface StudentPortalData {
+  id: string; // Unique ID for editing
+  serialNumber: number;
+  name: string;
+  enrollmentNo: string; // New Field
+  branch: string; // New Field
+  batchNo: string;
+  currentSemester: string;
+  subjects: StudentSubject[];
+}
+
+// Teacher Data Structure
 export interface TeacherData {
   serialNumber: number;
   teacherName: string;
-  employeeId: string; // Teacher ID
-  dateOfJoining: string; // ISO Format YYYY-MM-DD
+  employeeId: string;
+  dateOfJoining: string;
   email: string;
-  department: string; // Added for context
+  department: string;
 }

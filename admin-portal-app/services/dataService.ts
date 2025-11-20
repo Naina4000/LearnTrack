@@ -2,9 +2,9 @@
 // NOTE: We are MOCKING the API calls for local development.
 
 // import axios from 'axios'; // <-- Comment out axios to prevent network calls
-import { StudentPortalData, TeacherStudentView } from "@/types/data";
+import { StudentPortalData, TeacherData, StudentSubject } from "@/types/data";
 import { mockStudentData } from "@/data/mockStudentData";
-import { mockTeacherStudentView } from "@/data/mockTeacherData";
+import { mockTeacherData } from "@/data/mockTeacherData";
 
 // --- Data Fetching Functions (MOCKED) ---
 
@@ -22,16 +22,35 @@ export const fetchAllStudentData = async (): Promise<StudentPortalData[]> => {
 };
 
 /**
- * Fetches the list of students with daily presence/absence records from the Teacher Portal API.
+ * Updates the attendance for a specific student.
+ * In a real app, this would send a PUT/PATCH request to the backend.
  */
-export const fetchTeacherStudentView = async (): Promise<
-  TeacherStudentView[]
-> => {
+export const updateStudentAttendance = async (
+  studentId: string,
+  updatedSubjects: StudentSubject[]
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(
+        `MOCK: Updated attendance for student ${studentId}`,
+        updatedSubjects
+      );
+      // In a real app, this would be an axios.put() call
+      // For mock, we simply return true to simulate success
+      resolve(true);
+    }, 600);
+  });
+};
+
+/**
+ * Fetches the list of Teachers with their profile details.
+ */
+export const fetchTeacherData = async (): Promise<TeacherData[]> => {
   // Simulate network delay for better testing experience
   return new Promise((resolve) => {
     setTimeout(() => {
-      console.log("MOCK: Returning Teacher View Data.");
-      resolve(mockTeacherStudentView);
+      console.log("MOCK: Returning Teacher List Data.");
+      resolve(mockTeacherData);
     }, 800); // 0.8 second delay
   });
 };
