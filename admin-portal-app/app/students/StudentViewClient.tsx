@@ -6,7 +6,7 @@ import {
   updateStudentAttendance,
 } from "@/services/dataService";
 import { StudentPortalData, StudentSubject } from "@/types/data";
-import { Loader2, Users, Pencil, Check, X, Save } from "lucide-react";
+import { Loader2, Users, Pencil, Check, X } from "lucide-react";
 import React, { useState } from "react";
 
 const LoadingState = () => (
@@ -34,9 +34,12 @@ export default function StudentViewClient() {
     mutationFn: (params: { id: string; subjects: StudentSubject[] }) =>
       updateStudentAttendance(params.id, params.subjects),
     onSuccess: () => {
-      // In a real app, you would invalidate queries here to refetch fresh data
-      // queryClient.invalidateQueries({ queryKey: ['allStudents'] });
-      alert("Attendance updated successfully (Mock)!");
+      // CRITICAL FIX: This forces the UI to fetch the updated data immediately
+      queryClient.invalidateQueries({ queryKey: ["allStudents"] });
+
+      // Optional feedback
+      // alert("Attendance updated successfully (Mock)!");
+
       setEditingId(null);
     },
   });

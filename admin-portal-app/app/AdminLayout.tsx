@@ -1,14 +1,9 @@
-"use client"; // Mark as client to use usePathname and useAuth hooks
+"use client";
 
-import { Inter } from "next/font/google";
-import "./globals.css";
-import Providers from "./providers";
 import Link from "next/link";
 import { Home, Users, BookOpen, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-
-const inter = Inter({ subsets: ["latin"] });
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -16,7 +11,6 @@ const navItems = [
   { name: "Teacher Directory", href: "/teachers", icon: BookOpen },
 ];
 
-// Helper component for the Navigation Bar to handle Logout logic
 function NavigationBar() {
   const { logout } = useAuth();
 
@@ -52,41 +46,32 @@ function NavigationBar() {
   );
 }
 
-export default function RootLayout({
+export default function AdminLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const pathname = usePathname();
-  // Check if the current page is the login page
   const isLoginPage = pathname === "/login";
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <Providers>
-          <div className="min-h-screen bg-gray-100 flex flex-col">
-            {/* Only show Navigation Bar if NOT on the login page */}
-            {!isLoginPage && <NavigationBar />}
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {!isLoginPage && <NavigationBar />}
 
-            <main
-              className={`flex-grow w-full ${
-                !isLoginPage ? "max-w-7xl mx-auto p-6" : ""
-              }`}
-            >
-              {children}
-            </main>
+      <main
+        className={`flex-grow w-full ${
+          !isLoginPage ? "max-w-7xl mx-auto p-6" : ""
+        }`}
+      >
+        {children}
+      </main>
 
-            {/* Only show Footer if NOT on the login page */}
-            {!isLoginPage && (
-              <footer className="w-full p-4 bg-white border-t text-center text-xs text-gray-500">
-                © {new Date().getFullYear()} JUIT Administration. Powered by
-                Next.js & Dart Microservices.
-              </footer>
-            )}
-          </div>
-        </Providers>
-      </body>
-    </html>
+      {!isLoginPage && (
+        <footer className="w-full p-4 bg-white border-t text-center text-xs text-gray-500">
+          © {new Date().getFullYear()} JUIT Administration. Powered by Next.js &
+          Dart Microservices.
+        </footer>
+      )}
+    </div>
   );
 }
