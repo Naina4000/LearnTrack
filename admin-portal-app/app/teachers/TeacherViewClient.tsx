@@ -1,12 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-// FIX 1: Import the correct new function name
 import { fetchTeacherData } from "@/services/dataService";
-// FIX 2: Import the correct new type name
 import { TeacherData } from "@/types/data";
-import { Loader2, BookOpen, User, Calendar, BadgeCheck } from "lucide-react";
-import React from "react";
+import {
+  Loader2,
+  BookOpen,
+  User,
+  Calendar,
+  BadgeCheck,
+  Search,
+} from "lucide-react";
+import React, { useState } from "react";
 
 const LoadingState = () => (
   <div className="flex justify-center items-center h-64 text-indigo-500">
@@ -16,13 +21,14 @@ const LoadingState = () => (
 );
 
 export default function TeacherViewClient() {
-  // FIX 3: Use the new type and function in useQuery
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+
   const { data, isLoading, error } = useQuery<TeacherData[]>({
     queryKey: ["teacherProfiles"],
     queryFn: fetchTeacherData,
   });
 
-  // Logic to calculate years of service
   const calculateExperience = (dateString: string) => {
     const joiningDate = new Date(dateString);
     const today = new Date();
@@ -43,6 +49,13 @@ export default function TeacherViewClient() {
     return `${years} Years ${months > 0 ? `& ${months} Months` : ""}`;
   };
 
+  // Filter data based on Employee ID or Name
+  const filteredData = data?.filter(
+    (teacher) =>
+      teacher.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (isLoading) return <LoadingState />;
 
   if (error)
@@ -58,12 +71,29 @@ export default function TeacherViewClient() {
 
   return (
     <div className="p-4 bg-white rounded-xl shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-indigo-700 flex items-center">
-          <BookOpen className="w-8 h-8 mr-3" /> Teacher Staff Directory
-        </h1>
-        <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full font-semibold text-sm">
-          Total Staff: {data?.length || 0}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+        <div className="flex items-center">
+          <BookOpen className="w-8 h-8 mr-3 text-indigo-700" />
+          <h1 className="text-3xl font-bold text-indigo-700">
+            Teacher Staff Directory
+          </h1>
+          <div className="ml-4 bg-indigo-50 text-indigo-700 px-4 py-1 rounded-full font-semibold text-sm hidden md:block">
+            Total Staff: {data?.length || 0}
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative w-full md:w-72">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+            placeholder="Search by Employee ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -89,48 +119,59 @@ export default function TeacherViewClient() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data?.map((teacher) => (
-              <tr
-                key={teacher.employeeId}
-                className="hover:bg-indigo-50/60 transition-colors duration-150"
-              >
-                <td className="py-4 px-6 whitespace-nowrap text-gray-500 font-medium">
-                  #{teacher.serialNumber}
-                </td>
-                <td className="py-4 px-6 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
-                      <User size={16} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-900">
-                        {teacher.teacherName}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {teacher.email}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 font-mono">
-                    {teacher.employeeId}
-                  </span>
-                </td>
-                <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    {teacher.dateOfJoining}
-                  </div>
-                </td>
-                <td className="py-4 px-6 whitespace-nowrap">
-                  <div className="flex items-center text-sm font-semibold text-indigo-600">
-                    <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
-                    {calculateExperience(teacher.dateOfJoining)}
-                  </div>
+            {filteredData?.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-6 py-10 text-center text-gray-500"
+                >
+                  No teachers found matching "{searchTerm}"
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData?.map((teacher) => (
+                <tr
+                  key={teacher.employeeId}
+                  className="hover:bg-indigo-50/60 transition-colors duration-150"
+                >
+                  <td className="py-4 px-6 whitespace-nowrap text-gray-500 font-medium">
+                    #{teacher.serialNumber}
+                  </td>
+                  <td className="py-4 px-6 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+                        <User size={16} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-900">
+                          {teacher.teacherName}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {teacher.email}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 font-mono font-bold">
+                      {teacher.employeeId}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                      {teacher.dateOfJoining}
+                    </div>
+                  </td>
+                  <td className="py-4 px-6 whitespace-nowrap">
+                    <div className="flex items-center text-sm font-semibold text-indigo-600">
+                      <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
+                      {calculateExperience(teacher.dateOfJoining)}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
