@@ -86,14 +86,15 @@ export default function StudentViewClient() {
           <Users className="w-6 h-6 mr-2" /> Student Portal Data Overview
         </h1>
 
-        {/* NEW: Search Bar */}
+        {/* Search Bar with Black Text Fix */}
         <div className="relative w-full md:w-72">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+            // Added 'text-gray-900' here for dark text
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
             placeholder="Search by Enrollment No..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -182,7 +183,7 @@ export default function StudentViewClient() {
                               <div className="flex items-center">
                                 <input
                                   type="number"
-                                  className="w-14 text-sm p-1 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-right"
+                                  className="w-14 text-sm p-1 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-right text-black"
                                   value={sub.attendancePercentage}
                                   onChange={(e) =>
                                     handleAttendanceChange(i, e.target.value)
