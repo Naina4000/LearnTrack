@@ -1,61 +1,68 @@
-// services/dataService.ts
-// NOTE: We are MOCKING the API calls for local development.
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 
+import { db } from "../app/lib/firebase";
 import { StudentPortalData, TeacherData, StudentSubject } from "@/types/data";
-import { mockStudentData } from "@/data/mockStudentData";
-import { mockTeacherData } from "@/data/mockTeacherData";
 
-// --- Data Fetching Functions (MOCKED) ---
+/* ===================== STUDENTS ===================== */
 
-/**
- * Fetches the list of students.
- * NOTE: We return a spread copy [...mockStudentData] to ensure React Query
- * detects the new reference when data changes.
- */
 export const fetchAllStudentData = async (): Promise<StudentPortalData[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log("MOCK: Returning Student Portal Data.");
-      // Return a shallow copy so React detects state changes
-      resolve([...mockStudentData]);
-    }, 500);
+  const snapshot = await getDocs(collection(db, "students"));
+
+  let serial = 1;
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+
+    return {
+      id: docSnap.id,
+      serialNumber: serial++,
+      name: data.name,
+      enrollmentNo: data.rollNo,
+      branch: data.branch,
+      batchNo: data.branch,
+      currentSemester: data.semester,
+      subjects: (data.subjects || []).map((subject: string) => ({
+        name: subject,
+        attendancePercentage: data.attendance?.[subject] ?? 0,
+      })),
+    };
   });
 };
 
-/**
- * Updates the attendance for a specific student.
- * CRITICAL FIX: This now actually modifies the mock data array.
- */
 export const updateStudentAttendance = async (
   studentId: string,
-  updatedSubjects: StudentSubject[]
+  updatedSubjects: StudentSubject[],
 ): Promise<boolean> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // 1. Find the student in the mock data array
-      const studentIndex = mockStudentData.findIndex((s) => s.id === studentId);
+  const ref = doc(db, "students", studentId);
 
-      // 2. Update the data in memory
-      if (studentIndex !== -1) {
-        mockStudentData[studentIndex].subjects = updatedSubjects;
-        console.log(`MOCK: Data updated for student ${studentId}`);
-      } else {
-        console.error(`MOCK: Student ${studentId} not found!`);
-      }
-
-      resolve(true);
-    }, 600); // Simulate network delay
+  const updates: Record<string, number> = {};
+  updatedSubjects.forEach((s) => {
+    updates[`attendance.${s.name}`] = s.attendancePercentage;
   });
+
+  await updateDoc(ref, updates);
+  return true;
 };
 
-/**
- * Fetches the list of Teachers.
- */
+/* ===================== TEACHERS ===================== */
+
 export const fetchTeacherData = async (): Promise<TeacherData[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log("MOCK: Returning Teacher List Data.");
-      resolve(mockTeacherData);
-    }, 800);
+  const snapshot = await getDocs(collection(db, "teachers"));
+
+  let serial = 1;
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+
+    return {
+      id: docSnap.id,
+      serialNumber: serial++,
+      teacherName: data.name,
+      employeeId: data.teacherId,
+      department: data.department,
+      subjects: data.subjects || [],
+      dateOfJoining: data.joiningDate?.toDate?.() ?? null,
+      email: data.email || "",
+    };
   });
 };
