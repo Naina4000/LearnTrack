@@ -34,6 +34,12 @@ export default function TeacherViewClient() {
 
   /* ---------- Helpers ---------- */
 
+  const parseDate = (value: unknown): Date | null => {
+    if (!value) return null;
+    const d = new Date(value as string);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const formatDate = (date: Date | null) => {
     if (!date) return "—";
     return date.toLocaleDateString("en-IN", {
@@ -146,52 +152,56 @@ export default function TeacherViewClient() {
                 </td>
               </tr>
             ) : (
-              filteredData?.map((teacher) => (
-                <tr
-                  key={teacher.id}
-                  className="hover:bg-indigo-50/60 transition-colors"
-                >
-                  <td className="py-4 px-6 text-gray-500 font-medium">
-                    #{teacher.serialNumber}
-                  </td>
+              filteredData?.map((teacher) => {
+                const joiningDate = parseDate(teacher.dateOfJoining);
 
-                  <td className="py-4 px-6">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
-                        <User size={16} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-gray-900">
-                          {teacher.teacherName}
+                return (
+                  <tr
+                    key={teacher.employeeId}
+                    className="hover:bg-indigo-50/60 transition-colors"
+                  >
+                    <td className="py-4 px-6 text-gray-500 font-medium">
+                      #{teacher.serialNumber}
+                    </td>
+
+                    <td className="py-4 px-6">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+                          <User size={16} />
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {teacher.email || "—"}
+                        <div>
+                          <div className="text-sm font-bold text-gray-900">
+                            {teacher.teacherName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {teacher.email || "—"}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="py-4 px-6">
-                    <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-gray-100 border font-mono">
-                      {teacher.employeeId}
-                    </span>
-                  </td>
+                    <td className="py-4 px-6">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-gray-100 border font-mono">
+                        {teacher.employeeId}
+                      </span>
+                    </td>
 
-                  <td className="py-4 px-6 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                      {formatDate(teacher.dateOfJoining)}
-                    </div>
-                  </td>
+                    <td className="py-4 px-6 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                        {formatDate(joiningDate)}
+                      </div>
+                    </td>
 
-                  <td className="py-4 px-6">
-                    <div className="flex items-center text-sm font-semibold text-indigo-600">
-                      <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
-                      {calculateExperience(teacher.dateOfJoining)}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    <td className="py-4 px-6">
+                      <div className="flex items-center text-sm font-semibold text-indigo-600">
+                        <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
+                        {calculateExperience(joiningDate)}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
