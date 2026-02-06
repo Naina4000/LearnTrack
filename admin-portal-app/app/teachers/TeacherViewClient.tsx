@@ -140,7 +140,8 @@ export default function TeacherViewClient() {
               </th>
             </tr>
           </thead>
-
+          /* -----------------------------------------------------------------
+          */
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredData?.length === 0 ? (
               <tr>
