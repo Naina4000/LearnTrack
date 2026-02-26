@@ -121,3 +121,43 @@ export const fetchTeacherData = async (): Promise<TeacherData[]> => {
     };
   });
 };
+
+/* =====================================================
+   ADD STUDENT (MATCHING YOUR SCHEMA)
+   ===================================================== */
+
+import { addDoc, Timestamp } from "firebase/firestore";
+
+export const addStudent = async (form: any) => {
+  const subjects: string[] = form.subjects
+    .map((s: any) => s.name.trim())
+    .filter(Boolean);
+
+  const attendance: Record<string, number> = {};
+  form.subjects.forEach((s: any) => {
+    if (s.name) attendance[s.name] = Number(s.attendancePercentage) || 0;
+  });
+
+  await addDoc(collection(db, "students"), {
+    name: form.name,
+    rollNo: form.enrollmentNo,
+    branch: form.branch,
+    semester: form.currentSemester,
+    subjects,
+    attendance,
+  });
+};
+
+/* =====================================================
+   ADD TEACHER
+   ===================================================== */
+
+export const addTeacher = async (form: any) => {
+  await addDoc(collection(db, "teachers"), {
+    name: form.teacherName,
+    teacherId: form.employeeId,
+    department: form.department,
+    email: form.email,
+    joiningDate: Timestamp.fromDate(new Date(form.dateOfJoining)),
+  });
+};

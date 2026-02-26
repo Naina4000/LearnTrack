@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* ================= FIX THEME (NO DARK MODE) ================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f7fb;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --card-border: #e5e7eb;
+
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* REMOVE SYSTEM DARK MODE COMPLETELY */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f4f7fb;
+    --foreground: #111827;
+    --card: #ffffff;
+    --card-border: #e5e7eb;
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
   }
 }
+
+/* ================= BODY ================= */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
+
+/* ================= CARD ================= */
+
+.card {
+  @apply bg-white border border-gray-200 rounded-xl shadow-sm;
+}
+
+/* ================= INPUT ================= */
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg
+  bg-white text-gray-900
+  border border-gray-300
+  placeholder-gray-400
+  outline-none transition-all;
+}
+
+/* Hover */
+.input:hover {
+  @apply border-gray-400;
+}
+
+/* Focus */
+.input:focus {
+  @apply border-indigo-500 ring-2 ring-indigo-100;
+}
+
+/* ================= BUTTONS ================= */
+
+.btn {
+  @apply px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition;
+}
+
+.btn-primary {
+  @apply px-4 py-2 rounded-lg text-white font-semibold transition;
+  background: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+/* ================= EMPLOYEE ID BADGE ================= */
+
+.badge-id {
+  @apply px-2.5 py-1 rounded-md text-xs font-bold border font-mono;
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+
+/* ================= TABLE ================= */
+
+table {
+  background: white;
+}
+
+thead {
+  background: #f9fafb;
+}
+
+tbody tr:hover {
+  background: #f1f5ff;
 }

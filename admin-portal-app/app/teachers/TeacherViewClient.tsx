@@ -81,7 +81,7 @@ export default function TeacherViewClient() {
 
   if (error)
     return (
-      <div className="p-8 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+      <div className="p-8 rounded-xl border border-red-300 bg-red-50 text-red-700">
         <p className="font-bold">API Error (Teacher Portal):</p>
         <p>{(error as Error).message}</p>
       </div>
@@ -90,65 +90,57 @@ export default function TeacherViewClient() {
   /* ---------- UI ---------- */
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-lg">
+    <div className="p-4 card">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <div className="flex items-center">
-          <BookOpen className="w-8 h-8 mr-3 text-indigo-700" />
-          <h1 className="text-3xl font-bold text-indigo-700">
+          <BookOpen className="w-8 h-8 mr-3 text-indigo-600" />
+          <h1 className="text-3xl font-bold text-indigo-600">
             Teacher Staff Directory
           </h1>
-          <div className="ml-4 bg-indigo-50 text-indigo-700 px-4 py-1 rounded-full font-semibold text-sm hidden md:block">
+          <div className="ml-4 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full font-semibold text-sm hidden md:block">
             Total Staff: {data?.length || 0}
           </div>
         </div>
-
-        {/* Search */}
+        {/* SEARCH */}
         <div className="relative w-full md:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
+          <Search className="absolute left-3 top-2.5 text-black" size={18} />
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="Search by Employee ID or Name..."
+            placeholder="Search student..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 border rounded-lg text-black focus:ring-2 focus:ring-indigo-400 outline-none"
           />
         </div>
       </div>
-
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-lg border border-[var(--card-border)]">
+        <table className="min-w-full divide-y divide-[var(--card-border)]">
+          <thead className="bg-[color:var(--card)]/60 backdrop-blur">
             <tr>
-              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase">
+              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
                 Serial No.
               </th>
-              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase">
+              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
                 Teacher Name
               </th>
-              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase">
+              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
                 Employee ID
               </th>
-              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase">
+              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
                 Date of Joining
               </th>
-              <th className="py-4 px-6 text-left text-xs font-bold text-gray-500 uppercase">
+              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
                 Experience (Tenure)
               </th>
             </tr>
           </thead>
-          /* -----------------------------------------------------------------
-          */
-          <tbody className="bg-white divide-y divide-gray-200">
+
+          <tbody className="divide-y divide-[var(--card-border)]">
             {filteredData?.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-10 text-center text-gray-500"
-                >
+                <td colSpan={5} className="px-6 py-10 text-center opacity-60">
                   No teachers found matching "{searchTerm}"
                 </td>
               </tr>
@@ -159,9 +151,9 @@ export default function TeacherViewClient() {
                 return (
                   <tr
                     key={teacher.employeeId}
-                    className="hover:bg-indigo-50/60 transition-colors"
+                    className="hover:bg-indigo-500/5 transition-colors"
                   >
-                    <td className="py-4 px-6 text-gray-500 font-medium">
+                    <td className="py-4 px-6 opacity-70 font-medium">
                       #{teacher.serialNumber}
                     </td>
 
@@ -171,10 +163,10 @@ export default function TeacherViewClient() {
                           <User size={16} />
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-gray-900">
+                          <div className="text-sm font-bold">
                             {teacher.teacherName}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs opacity-60">
                             {teacher.email || "—"}
                           </div>
                         </div>
@@ -182,14 +174,12 @@ export default function TeacherViewClient() {
                     </td>
 
                     <td className="py-4 px-6">
-                      <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-gray-100 border font-mono">
-                        {teacher.employeeId}
-                      </span>
+                      <span className="badge-id">{teacher.employeeId}</span>
                     </td>
 
-                    <td className="py-4 px-6 text-sm text-gray-600">
+                    <td className="py-4 px-6 text-sm opacity-80">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                        <Calendar className="w-4 h-4 mr-2 opacity-60" />
                         {formatDate(joiningDate)}
                       </div>
                     </td>
