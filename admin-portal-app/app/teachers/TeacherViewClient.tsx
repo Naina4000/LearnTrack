@@ -103,11 +103,11 @@ export default function TeacherViewClient() {
           </div>
         </div>
         {/* SEARCH */}
-        <div className="relative w-full md:w-72">
+        <div className="relative w-full md:w-86">
           <Search className="absolute left-3 top-2.5 text-black" size={18} />
           <input
             type="text"
-            placeholder="Search student..."
+            placeholder="Search Teacher By Name or Emp. ID "
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-3 py-2 border rounded-lg text-black focus:ring-2 focus:ring-indigo-400 outline-none"
