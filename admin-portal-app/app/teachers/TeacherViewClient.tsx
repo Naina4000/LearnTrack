@@ -1,17 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchTeacherData } from "@/services/dataService";
-import { TeacherData } from "@/types/data";
+import { fetchTeacherData, fetchAllStudentData } from "@/services/dataService";
+import { getStudentsUnderTeacher } from "@/utils/filterStudentsForTeacher";
+import { TeacherData, StudentPortalData } from "@/types/data";
 import {
   Loader2,
   BookOpen,
   User,
-  Calendar,
   BadgeCheck,
   Search,
+  Users,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 /* ===================== LOADING ===================== */
 
@@ -22,181 +23,218 @@ const LoadingState = () => (
   </div>
 );
 
-/* ===================== MAIN ===================== */
-
 export default function TeacherViewClient() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherData | null>(
+    null,
+  );
 
-  const { data, isLoading, error } = useQuery<TeacherData[]>({
+  /* ===================== TEACHERS ===================== */
+
+  const { data: teachers = [], isLoading } = useQuery<TeacherData[]>({
     queryKey: ["teacherProfiles"],
     queryFn: fetchTeacherData,
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
   });
 
-  /* ---------- Helpers ---------- */
+  /* ===================== FETCH ALL STUDENTS ONCE ===================== */
 
-  const parseDate = (value: unknown): Date | null => {
-    if (!value) return null;
-    const d = new Date(value as string);
-    return isNaN(d.getTime()) ? null : d;
-  };
+  const { data: allStudents = [], isFetching } = useQuery<StudentPortalData[]>({
+    queryKey: ["allStudents"],
+    queryFn: fetchAllStudentData,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
+  });
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return "—";
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  /* ===================== FILTER STUDENTS ===================== */
 
-  const calculateExperience = (date: Date | null) => {
-    if (!date) return "—";
+  const students = useMemo(() => {
+    if (!selectedTeacher) return [];
+    return getStudentsUnderTeacher(selectedTeacher, allStudents);
+  }, [selectedTeacher, allStudents]);
+
+  /* ===================== EXPERIENCE ===================== */
+
+  const calculateExperience = (dateStr: any) => {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "—";
 
     const today = new Date();
-
     let years = today.getFullYear() - date.getFullYear();
     let months = today.getMonth() - date.getMonth();
 
-    if (months < 0 || (months === 0 && today.getDate() < date.getDate())) {
+    if (months < 0) {
       years--;
       months += 12;
     }
 
-    if (years === 0 && months === 0) return "Joined this month";
-    if (years === 0) return `${months} months`;
-    return `${years} Years${months > 0 ? ` & ${months} Months` : ""}`;
+    if (years <= 0) return `${months} months`;
+    return `${years}y ${months}m`;
   };
 
-  /* ---------- Filter ---------- */
+  /* ===================== FILTER + SORT ===================== */
 
-  const filteredData = data?.filter(
-    (teacher) =>
-      teacher.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.teacherName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredTeachers = useMemo(() => {
+    const term = searchTerm.toLowerCase();
 
-  /* ---------- States ---------- */
+    return teachers
+      .filter((t) =>
+        [t.teacherName, t.employeeId, t.department, ...(t.subjects || [])]
+          .join(" ")
+          .toLowerCase()
+          .includes(term),
+      )
+      .sort((a, b) =>
+        a.teacherName.localeCompare(b.teacherName, undefined, {
+          sensitivity: "base",
+        }),
+      );
+  }, [teachers, searchTerm]);
 
   if (isLoading) return <LoadingState />;
 
-  if (error)
-    return (
-      <div className="p-8 rounded-xl border border-red-300 bg-red-50 text-red-700">
-        <p className="font-bold">API Error (Teacher Portal):</p>
-        <p>{(error as Error).message}</p>
-      </div>
-    );
-
-  /* ---------- UI ---------- */
+  /* ===================== UI ===================== */
 
   return (
-    <div className="p-4 card">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+    <div className="p-5">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div className="flex items-center">
           <BookOpen className="w-8 h-8 mr-3 text-indigo-600" />
           <h1 className="text-3xl font-bold text-indigo-600">
             Teacher Staff Directory
           </h1>
-          <div className="ml-4 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full font-semibold text-sm hidden md:block">
-            Total Staff: {data?.length || 0}
-          </div>
         </div>
-        {/* SEARCH */}
-        <div className="relative w-full md:w-86">
-          <Search className="absolute left-3 top-2.5 text-black" size={18} />
+
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
           <input
             type="text"
-            placeholder="Search Teacher By Name or Emp. ID "
+            placeholder="Search teacher..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 border rounded-lg text-black focus:ring-2 focus:ring-indigo-400 outline-none"
+            className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-white shadow-sm outline-none focus:shadow-md transition"
           />
         </div>
       </div>
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-[var(--card-border)]">
-        <table className="min-w-full divide-y divide-[var(--card-border)]">
-          <thead className="bg-[color:var(--card)]/60 backdrop-blur">
+
+      {/* ===================== TEACHER TABLE ===================== */}
+
+      <div className="overflow-x-auto bg-white rounded-xl shadow-sm">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
             <tr>
-              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
-                Serial No.
-              </th>
-              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
-                Teacher Name
-              </th>
-              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
-                Employee ID
-              </th>
-              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
-                Date of Joining
-              </th>
-              <th className="py-4 px-6 text-left text-xs font-bold uppercase opacity-70">
-                Experience (Tenure)
-              </th>
+              <th className="px-4 py-3 text-left">#</th>
+              <th className="px-4 py-3 text-left">Teacher</th>
+              <th className="px-4 py-3 text-left">ID</th>
+              <th className="px-4 py-3 text-left">Department</th>
+              <th className="px-4 py-3 text-left">Subjects</th>
+              <th className="px-4 py-3 text-left">Duration</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[var(--card-border)]">
-            {filteredData?.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center opacity-60">
-                  No teachers found matching "{searchTerm}"
-                </td>
-              </tr>
-            ) : (
-              filteredData?.map((teacher) => {
-                const joiningDate = parseDate(teacher.dateOfJoining);
+          <tbody className="divide-y">
+            {filteredTeachers.map((teacher, i) => {
+              const active = selectedTeacher?.id === teacher.id;
 
-                return (
-                  <tr
-                    key={teacher.employeeId}
-                    className="hover:bg-indigo-500/5 transition-colors"
-                  >
-                    <td className="py-4 px-6 opacity-70 font-medium">
-                      #{teacher.serialNumber}
-                    </td>
+              return (
+                <tr
+                  key={teacher.id}
+                  onClick={() => setSelectedTeacher(teacher)}
+                  className={`cursor-pointer transition ${
+                    active ? "bg-indigo-50" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <td className="px-4 py-4 font-medium">{i + 1}</td>
 
-                    <td className="py-4 px-6">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
-                          <User size={16} />
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <User size={16} className="text-indigo-600" />
+                      </div>
+                      <div>
+                        <div className="font-semibold">
+                          {teacher.teacherName}
                         </div>
-                        <div>
-                          <div className="text-sm font-bold">
-                            {teacher.teacherName}
-                          </div>
-                          <div className="text-xs opacity-60">
-                            {teacher.email || "—"}
-                          </div>
+                        <div className="text-xs text-gray-500">
+                          {teacher.email}
                         </div>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    <td className="py-4 px-6">
-                      <span className="badge-id">{teacher.employeeId}</span>
-                    </td>
+                  <td className="px-4 py-4 text-xs font-semibold text-gray-600">
+                    {teacher.employeeId}
+                  </td>
 
-                    <td className="py-4 px-6 text-sm opacity-80">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-2 opacity-60" />
-                        {formatDate(joiningDate)}
-                      </div>
-                    </td>
+                  <td className="px-4 py-4">{teacher.department}</td>
 
-                    <td className="py-4 px-6">
-                      <div className="flex items-center text-sm font-semibold text-indigo-600">
-                        <BadgeCheck className="w-4 h-4 mr-2 text-indigo-500" />
-                        {calculateExperience(joiningDate)}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {(teacher.subjects || []).map((sub, i) => (
+                        <span
+                          key={i}
+                          className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                        >
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-4 text-indigo-700 whitespace-nowrap">
+                    <BadgeCheck className="inline w-4 h-4 mr-1" />
+                    {calculateExperience(teacher.dateOfJoining)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {/* ===================== STUDENTS ===================== */}
+
+      {selectedTeacher && (
+        <div className="mt-8 p-5 bg-white rounded-xl shadow-sm">
+          <div className="flex items-center mb-4">
+            <Users className="mr-2 text-indigo-600" />
+            <h2 className="text-xl font-bold">
+              Students Under {selectedTeacher.teacherName}
+            </h2>
+          </div>
+
+          {isFetching ? (
+            <div className="flex items-center text-indigo-600">
+              <Loader2 className="animate-spin mr-2" size={18} />
+              Loading Students...
+            </div>
+          ) : students.length === 0 ? (
+            <div className="text-sm opacity-70">
+              No students registered under this teacher
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {students.map((s) => (
+                <div
+                  key={s.id}
+                  className="rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition"
+                >
+                  <div className="font-semibold">{s.name}</div>
+                  <div className="text-xs text-gray-500">
+                    Roll: {s.enrollmentNo}
+                  </div>
+                  <div className="text-xs text-indigo-600 font-medium">
+                    Attendance: {s.overallAttendance}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

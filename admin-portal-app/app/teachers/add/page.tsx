@@ -1,168 +1,272 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addTeacher } from "@/services/dataService";
-import { Loader2, UserCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-type TeacherForm = {
-  teacherName: string;
-  employeeId: string;
-  department: string;
-  email: string;
-  dateOfJoining: string;
+/* ================= SAFE NORMALIZERS ================= */
+
+const normalizeDept = (d?: string) => (d || "").trim().toUpperCase();
+const normalizeSem = (s?: string) => String(s || "").replace(/\D/g, "");
+
+/* ================= SUBJECT MAP ================= */
+
+const SUBJECT_STRUCTURE: Record<string, Record<string, string[]>> = {
+  CSE: {
+    "3": ["OOPS", "COA", "DSA"],
+    "4": ["DAA", "DBMS", "TOC"],
+    "5": ["CN", "AI", "WEB Tech"],
+  },
+  CIVIL: {
+    "3": ["Surveying", "Fluid Mechanics"],
+    "4": ["Geotechnical", "Transportation"],
+  },
+  ELECTRONICS: {
+    "3": ["Digital Logic", "Signals"],
+    "4": ["Microprocessor", "Control Systems"],
+  },
+};
+
+const BATCHES: Record<string, string[]> = {
+  CSE: ["CS-1", "CS-2", "CS-3"],
+  CIVIL: ["CV-1", "CV-2", "CV-3"],
+  ELECTRONICS: ["EC-1", "EC-2", "EC-3"],
 };
 
 export default function AddTeacherPage() {
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState<TeacherForm>({
+  const [allocations, setAllocations] = useState<
+    { batch: string; semester: string }[]
+  >([]);
+
+  const [form, setForm] = useState({
     teacherName: "",
     employeeId: "",
-    department: "",
     email: "",
     dateOfJoining: "",
+    department: "",
+    subjects: [] as string[],
   });
 
-  /* ================= MUTATION ================= */
+  /* ================= COMPUTE SUBJECTS ================= */
+
+  const availableSubjects = useMemo(() => {
+    const dept = normalizeDept(form.department);
+    if (!dept || allocations.length === 0) return [];
+
+    const subjectSet = new Set<string>();
+
+    allocations.forEach((a) => {
+      const sem = normalizeSem(a.semester);
+      SUBJECT_STRUCTURE[dept]?.[sem]?.forEach((s) => subjectSet.add(s));
+    });
+
+    return Array.from(subjectSet).sort();
+  }, [allocations, form.department]);
+
+  /* remove selected subjects if allocation changed */
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      subjects: prev.subjects.filter((s) => availableSubjects.includes(s)),
+    }));
+  }, [availableSubjects]);
+
+  /* ================= CLASS HANDLERS ================= */
+
+  const addAllocation = (batch: string, semester: string) => {
+    const sem = normalizeSem(semester);
+
+    if (!form.department) {
+      alert("Select department first");
+      return;
+    }
+
+    if (
+      allocations.some(
+        (a) => a.batch === batch && normalizeSem(a.semester) === sem,
+      )
+    )
+      return;
+
+    setAllocations([...allocations, { batch, semester: sem }]);
+  };
+
+  const removeAllocation = (batch: string, semester: string) => {
+    setAllocations(
+      allocations.filter(
+        (a) =>
+          !(
+            a.batch === batch &&
+            normalizeSem(a.semester) === normalizeSem(semester)
+          ),
+      ),
+    );
+  };
+
+  /* ================= SUBJECT SELECT ================= */
+
+  const toggleSubject = (subject: string) => {
+    setForm((prev) => ({
+      ...prev,
+      subjects: prev.subjects.includes(subject)
+        ? prev.subjects.filter((s) => s !== subject)
+        : [...prev.subjects, subject],
+    }));
+  };
+
+  /* ================= SAVE ================= */
 
   const mutation = useMutation({
     mutationFn: addTeacher,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teacherProfiles"] });
-      alert("Teacher successfully added 🎉");
+
+      alert("Teacher Assigned Successfully 🎉");
 
       setForm({
         teacherName: "",
         employeeId: "",
-        department: "",
         email: "",
         dateOfJoining: "",
+        department: "",
+        subjects: [],
       });
+      setAllocations([]);
     },
   });
 
-  /* ================= HANDLERS ================= */
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
   const submit = () => {
-    if (!form.teacherName || !form.employeeId) {
-      alert("Please fill required fields");
-      return;
-    }
+    if (!form.teacherName || !form.department || allocations.length === 0)
+      return alert("Fill all required fields");
 
-    mutation.mutate(form);
+    if (form.subjects.length === 0) return alert("Select at least one subject");
+
+    mutation.mutate({
+      ...form,
+      allocations,
+    });
   };
 
   /* ================= UI ================= */
 
+  const dept = normalizeDept(form.department);
+
   return (
-    <div className="max-w-3xl mx-auto p-8 bg-white shadow-xl rounded-2xl">
-      {/* Header */}
-      <div className="flex items-center mb-6">
-        <div className="p-3 bg-indigo-100 rounded-xl mr-4">
-          <UserCheck className="w-6 h-6 text-indigo-600" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-indigo-700">
-            Register New Teacher
-          </h1>
-          <p className="text-sm text-gray-700">
-            Enter faculty employment and department details
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto p-8 bg-white shadow-xl rounded-2xl">
+      <h1 className="text-3xl font-bold text-indigo-700 mb-6">
+        Assign Teacher Subjects
+      </h1>
+
+      {/* BASIC INFO */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <input
+          placeholder="Teacher Name"
+          className="input"
+          onChange={(e) => setForm({ ...form, teacherName: e.target.value })}
+        />
+
+        <input
+          placeholder="Employee ID"
+          className="input"
+          onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
+        />
+
+        <input
+          placeholder="Email"
+          className="input"
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+
+        <input
+          type="date"
+          className="input"
+          onChange={(e) => setForm({ ...form, dateOfJoining: e.target.value })}
+        />
+
+        <select
+          className="input"
+          onChange={(e) => setForm({ ...form, department: e.target.value })}
+        >
+          <option value="">Department</option>
+          <option>CSE</option>
+          <option>Civil</option>
+          <option>Electronics</option>
+        </select>
       </div>
 
-      {/* Teacher Info */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
-          Teacher Information
-        </h2>
+      {/* CLASS SELECTION */}
+      {dept && (
+        <div className="mt-6 border-t pt-4">
+          <h2 className="font-semibold mb-3">Assign Classes</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              name="teacherName"
-              value={form.teacherName}
-              onChange={handleChange}
-              placeholder="Enter full name"
-              className="input"
-            />
-          </div>
+          {BATCHES[dept]?.map((batch) => (
+            <div key={batch} className="mb-3">
+              <div className="font-medium">{batch}</div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Employee ID
-            </label>
-            <input
-              name="employeeId"
-              value={form.employeeId}
-              onChange={handleChange}
-              placeholder="Enter employee ID"
-              className="input"
-            />
-          </div>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                  <button
+                    key={sem}
+                    type="button"
+                    onClick={() => addAllocation(batch, String(sem))}
+                    className="px-3 py-1 bg-gray-100 rounded hover:bg-indigo-100"
+                  >
+                    Sem {sem}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Department
-            </label>
-            <input
-              name="department"
-              value={form.department}
-              onChange={handleChange}
-              placeholder="CSE, ECE, Civil..."
-              className="input"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="example@university.edu"
-              className="input"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date of Joining
-            </label>
-            <input
-              name="dateOfJoining"
-              type="date"
-              value={form.dateOfJoining}
-              onChange={handleChange}
-              className="input"
-            />
+          <div className="flex flex-wrap gap-2 mt-4">
+            {allocations.map((a) => (
+              <div
+                key={a.batch + a.semester}
+                onClick={() => removeAllocation(a.batch, a.semester)}
+                className="bg-indigo-100 px-3 py-1 rounded cursor-pointer"
+              >
+                {a.batch} Sem {a.semester} ✕
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Submit */}
+      {/* SUBJECTS */}
+      {availableSubjects.length > 0 && (
+        <div className="mt-6 border-t pt-4">
+          <h2 className="font-semibold mb-3">Select Subjects</h2>
+
+          <div className="flex flex-wrap gap-3">
+            {availableSubjects.map((sub) => (
+              <button
+                key={sub}
+                type="button"
+                onClick={() => toggleSubject(sub)}
+                className={`px-4 py-2 rounded-lg border ${
+                  form.subjects.includes(sub)
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-gray-100 hover:bg-indigo-100"
+                }`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <button
         onClick={submit}
-        disabled={mutation.isPending}
-        className="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center transition"
+        className="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl"
       >
         {mutation.isPending ? (
-          <>
-            <Loader2 className="animate-spin w-5 h-5 mr-2" />
-            Saving Teacher...
-          </>
+          <Loader2 className="animate-spin mx-auto" />
         ) : (
-          "Save Teacher Record"
+          "Assign Teacher"
         )}
       </button>
     </div>

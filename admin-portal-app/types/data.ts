@@ -1,28 +1,49 @@
-// types/data.ts
+/* ================= SUBJECT ================= */
 
 export interface StudentSubject {
   name: string;
   attendancePercentage: number;
 }
 
-// UPDATED: Student Data Structure
+/* ================= STUDENT ================= */
+
 export interface StudentPortalData {
-  id: string; // Unique ID for editing
-  serialNumber: number;
+  id: string;
+  serialNumber?: number;
+
   name: string;
-  enrollmentNo: string; // New Field
-  branch: string; // New Field
-  batchNo: string;
+  enrollmentNo: string;
+
+  branch: string;
+  batch: string;
   currentSemester: string;
+
   subjects: StudentSubject[];
+
+  overallAttendance: number;
 }
 
-// Teacher Data Structure
+/* ================= TEACHER ================= */
+
+export interface TeacherAllocation {
+  batch: string;
+  semester: string;
+}
+
 export interface TeacherData {
-  serialNumber: number;
+  id: string;
+  serialNumber?: number;
+
   teacherName: string;
   employeeId: string;
-  dateOfJoining: string;
   email: string;
+
   department: string;
+
+  // 🔥 NEW CORE FIELD
+  allocations: TeacherAllocation[];
+
+  subjects: string[];
+
+  dateOfJoining: string;
 }

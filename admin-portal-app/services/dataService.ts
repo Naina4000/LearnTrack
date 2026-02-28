@@ -1,78 +1,121 @@
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  addDoc,
+} from "firebase/firestore";
 import { db } from "../app/lib/firebase";
 import { StudentPortalData, TeacherData, StudentSubject } from "@/types/data";
 
 /* =====================================================
-   SUBJECT NORMALIZER (BULLETPROOF)
+   SAFE HELPERS
+   ===================================================== */
+
+const asString = (val: any, fallback = "—"): string =>
+  val === undefined || val === null ? fallback : String(val);
+
+const normalizeSemester = (sem: any): string =>
+  String(sem ?? "")
+    .replace(/semester|sem/gi, "")
+    .trim()
+    .toLowerCase();
+
+/* =====================================================
+   SUBJECT NORMALIZER
    ===================================================== */
 
 const normalizeSubjects = (raw: unknown): string[] => {
   if (!raw) return [];
 
-  // ✅ Case 1: Proper array of strings
-  if (Array.isArray(raw)) {
-    // Handle ["[\"OS\",\"DBMS\",\"CN\"]"]
-    if (
-      raw.length === 1 &&
-      typeof raw[0] === "string" &&
-      raw[0].startsWith("[")
-    ) {
-      try {
-        const parsed = JSON.parse(raw[0]);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-
+  if (Array.isArray(raw))
     return raw.filter((s): s is string => typeof s === "string");
-  }
 
-  // ✅ Case 2: JSON string
   if (typeof raw === "string") {
     try {
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return [raw];
   }
 
   return [];
 };
 
 /* =====================================================
-   STUDENTS
+   BUILD STUDENT OBJECT
+   ===================================================== */
+
+const buildStudent = (docSnap: any, serial: number): StudentPortalData => {
+  const data = docSnap.data();
+  const subjects = normalizeSubjects(data.subjects);
+
+  const subjectObjects: StudentSubject[] = subjects.map((subject) => ({
+    name: subject,
+    attendancePercentage:
+      typeof data.attendance?.[subject] === "number"
+        ? data.attendance[subject]
+        : 0,
+  }));
+
+  const overallAttendance =
+    subjectObjects.length === 0
+      ? 0
+      : Math.round(
+          subjectObjects.reduce((acc, s) => acc + s.attendancePercentage, 0) /
+            subjectObjects.length,
+        );
+
+  return {
+    id: docSnap.id,
+    serialNumber: serial,
+
+    name: asString(data.name),
+    enrollmentNo: asString(data.rollNo ?? data.enrollmentNo),
+    branch: asString(data.branch),
+    batch: asString(data.batch),
+    currentSemester: normalizeSemester(data.semester),
+
+    subjects: subjectObjects,
+    overallAttendance,
+  };
+};
+
+/* =====================================================
+   FETCH ALL STUDENTS
    ===================================================== */
 
 export const fetchAllStudentData = async (): Promise<StudentPortalData[]> => {
   const snapshot = await getDocs(collection(db, "students"));
   let serial = 1;
+  return snapshot.docs.map((docSnap) => buildStudent(docSnap, serial++));
+};
 
-  return snapshot.docs.map((docSnap) => {
-    const data = docSnap.data();
+/* =====================================================
+   🔥 FETCH STUDENTS FOR TEACHER ALLOCATIONS
+   (MULTI CLASS SUPPORT)
+   ===================================================== */
 
-    const subjects = normalizeSubjects(data.subjects);
+export const fetchStudentsByBatch = async (
+  allocations: { batch: string; semester: string }[],
+): Promise<StudentPortalData[]> => {
+  if (!allocations || allocations.length === 0) return [];
 
-    return {
-      id: docSnap.id,
-      serialNumber: serial++,
+  const snapshot = await getDocs(collection(db, "students"));
+  let serial = 1;
 
-      name: data.name || data.Name || "—",
-      enrollmentNo: String(data.rollNo ?? ""),
-      branch: data.branch ?? "—",
-      batchNo: data.branch ?? "—",
-      currentSemester: data.semester ?? "—",
+  const students = snapshot.docs.map((docSnap) =>
+    buildStudent(docSnap, serial++),
+  );
 
-      subjects: subjects.map((subject) => ({
-        name: subject,
-        attendancePercentage:
-          typeof data.attendance?.[subject] === "number"
-            ? data.attendance[subject]
-            : 0,
-      })),
-    };
-  });
+  return students.filter((student) =>
+    allocations.some(
+      (alloc) =>
+        student.batch.toLowerCase() === alloc.batch.toLowerCase() &&
+        normalizeSemester(student.currentSemester) ===
+          normalizeSemester(alloc.semester),
+    ),
+  );
 };
 
 /* =====================================================
@@ -84,11 +127,10 @@ export const updateStudentAttendance = async (
   updatedSubjects: StudentSubject[],
 ): Promise<boolean> => {
   const ref = doc(db, "students", studentId);
-
   const updates: Record<string, number> = {};
 
   updatedSubjects.forEach((s) => {
-    updates[`attendance.${s.name}`] = s.attendancePercentage;
+    updates[`attendance.${s.name}`] = Number(s.attendancePercentage) || 0;
   });
 
   await updateDoc(ref, updates);
@@ -96,7 +138,7 @@ export const updateStudentAttendance = async (
 };
 
 /* =====================================================
-   TEACHERS
+   FETCH TEACHERS (MULTI ALLOCATION SUPPORT)
    ===================================================== */
 
 export const fetchTeacherData = async (): Promise<TeacherData[]> => {
@@ -106,27 +148,40 @@ export const fetchTeacherData = async (): Promise<TeacherData[]> => {
   return snapshot.docs.map((docSnap) => {
     const data = docSnap.data();
 
+    /* BACKWARD COMPATIBILITY
+       if old teacher stored single batch+semester
+       convert → allocations array
+    */
+    let allocations = [];
+
+    if (Array.isArray(data.allocations)) {
+      allocations = data.allocations;
+    } else if (data.batch && data.semester) {
+      allocations = [{ batch: data.batch, semester: data.semester }];
+    }
+
     return {
       id: docSnap.id,
       serialNumber: serial++,
 
-      teacherName: data.name || "—",
-      employeeId: String(data.teacherId ?? "—"),
-      department: data.department ?? "—",
+      teacherName: asString(data.teacherName ?? data.name),
+      employeeId: asString(data.employeeId ?? data.teacherId),
+      email: asString(data.email, ""),
+
+      department: asString(data.department),
+
+      allocations,
 
       subjects: normalizeSubjects(data.subjects),
 
-      dateOfJoining: data.joiningDate?.toDate?.() ?? null,
-      email: data.email ?? "",
+      dateOfJoining: data.dateOfJoining || data.joiningDate || "",
     };
   });
 };
 
 /* =====================================================
-   ADD STUDENT (MATCHING YOUR SCHEMA)
+   ADD STUDENT
    ===================================================== */
-
-import { addDoc, Timestamp } from "firebase/firestore";
 
 export const addStudent = async (form: any) => {
   const subjects: string[] = form.subjects
@@ -142,6 +197,7 @@ export const addStudent = async (form: any) => {
     name: form.name,
     rollNo: form.enrollmentNo,
     branch: form.branch,
+    batch: form.batch,
     semester: form.currentSemester,
     subjects,
     attendance,
@@ -149,15 +205,22 @@ export const addStudent = async (form: any) => {
 };
 
 /* =====================================================
-   ADD TEACHER
+   ADD TEACHER (MULTI CLASS SUPPORT)
    ===================================================== */
 
 export const addTeacher = async (form: any) => {
   await addDoc(collection(db, "teachers"), {
-    name: form.teacherName,
-    teacherId: form.employeeId,
-    department: form.department,
+    teacherName: form.teacherName,
+    employeeId: form.employeeId,
     email: form.email,
-    joiningDate: Timestamp.fromDate(new Date(form.dateOfJoining)),
+
+    department: form.department,
+
+    // 🔥 MAIN FEATURE
+    allocations: form.allocations || [],
+
+    subjects: form.subjects || [],
+
+    dateOfJoining: form.dateOfJoining,
   });
 };

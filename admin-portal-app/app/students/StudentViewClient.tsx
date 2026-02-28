@@ -76,15 +76,23 @@ export default function StudentViewClient() {
     );
   }, []);
 
-  /* ---------- Filter ---------- */
+  /* ================= SEARCH + SORT ================= */
 
   const filteredData = useMemo(() => {
     if (!data) return [];
-    const term = searchTerm.toLowerCase();
-    return data.filter(
-      (student) =>
-        student.enrollmentNo.toLowerCase().includes(term) ||
-        student.name.toLowerCase().includes(term),
+
+    const term = searchTerm.trim().toLowerCase();
+
+    const filtered = data.filter((student) => {
+      const name = student.name.toLowerCase();
+      const roll = student.enrollmentNo.toLowerCase();
+
+      return name.includes(term) || roll.includes(term);
+    });
+
+    // Alphabetical Sort A → Z
+    return filtered.sort((a, b) =>
+      a.name.localeCompare(b.name, "en", { sensitivity: "base" }),
     );
   }, [data, searchTerm]);
 
@@ -112,16 +120,16 @@ export default function StudentViewClient() {
             Student Portal Overview
           </h1>
           <div className="ml-4 bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full font-semibold text-sm hidden md:block">
-            Total Students: {data?.length || 0}
+            Total Students: {filteredData.length}
           </div>
         </div>
 
         {/* SEARCH */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 text-black" size={18} />
+          <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
           <input
             type="text"
-            placeholder="Search student..."
+            placeholder="Search by name or roll number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-3 py-2 border rounded-lg text-black focus:ring-2 focus:ring-indigo-400 outline-none"
@@ -154,24 +162,26 @@ export default function StudentViewClient() {
           </thead>
 
           <tbody className="divide-y divide-[var(--card-border)]">
-            {filteredData.map((student) => {
+            {filteredData.map((student, index) => {
               const isEditing = editingId === student.id;
 
               return (
                 <tr
                   key={student.id}
-                  className={`transition ${isEditing ? "bg-indigo-500/5" : "hover:bg-indigo-500/5"}`}
+                  className={`transition ${
+                    isEditing ? "bg-indigo-500/5" : "hover:bg-indigo-500/5"
+                  }`}
                 >
-                  <td className="py-4 px-6 opacity-70">
-                    {student.serialNumber}
-                  </td>
+                  {/* SERIAL NUMBER FIXED */}
+                  <td className="py-4 px-6 opacity-70">{index + 1}</td>
+
                   <td className="py-4 px-6 font-semibold">{student.name}</td>
                   <td className="py-4 px-6 font-mono opacity-80">
                     {student.enrollmentNo}
                   </td>
                   <td className="py-4 px-6 opacity-80">{student.branch}</td>
                   <td className="py-4 px-6 opacity-80">
-                    {student.batchNo} / {student.currentSemester}
+                    {student.batch} / {student.currentSemester}
                   </td>
 
                   {/* SUBJECTS */}
