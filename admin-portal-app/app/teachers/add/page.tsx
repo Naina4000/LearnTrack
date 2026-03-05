@@ -14,17 +14,35 @@ const normalizeSem = (s?: string) => String(s || "").replace(/\D/g, "");
 
 const SUBJECT_STRUCTURE: Record<string, Record<string, string[]>> = {
   CSE: {
+    "1": ["Maths 1", "Physics", "Engg. Drawing"],
+    "2": ["Maths 2", "Chmistry", "Basic Elec."],
     "3": ["OOPS", "COA", "DSA"],
     "4": ["DAA", "DBMS", "TOC"],
     "5": ["CN", "AI", "WEB Tech"],
+    "6": ["Cryptography", "ML", "Minor Project"],
+    "7": ["IOT", "Cloud Computing", "Major Project"],
+    "8": ["Internship", "Major Project",],
   },
   CIVIL: {
+    "1": ["Maths 1", "Physics", "Engg. Drawing"],
+    "2": ["Maths 2", "Chmistry", "Basic Elec."],
     "3": ["Surveying", "Fluid Mechanics"],
     "4": ["Geotechnical", "Transportation"],
+    "5": ["Structure Analysis 1", "Transportation Engg.", "Concurit Design"],
+    "6": ["Steel Structure", "Irrigation Engg.", "Minor Project"],
+    "7": ["Structure Design", "Bridge Engg.", "Major Project"],
+    "8": ["Internsip", "Major Project"],
+    
   },
   ELECTRONICS: {
+    "1": ["Maths 1", "Physics", "Engg. Drawing"],
+    "2": ["Maths 2", "Chmistry", "Basic Elec."],
     "3": ["Digital Logic", "Signals"],
     "4": ["Microprocessor", "Control Systems"],
+    "5": ["Analog Communication", "Digital Signal Processing", "VLSI Design"],
+    "6": ["Digital Communication", "Embeded Sys..", "Minor Project"],
+    "7": ["Wireless Communication", "Robotics", "Major Project"],
+    "8": ["Internship", "Major Project"],
   },
 };
 
